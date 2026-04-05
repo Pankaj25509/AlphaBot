@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeutralMind — Unbiased AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:    #0f0f0f;
+      --paper:  #f5f2eb;
+      --accent: #c47c2b;
+      --muted:  #8a8070;
+      --rule:   #ddd8cc;
+      --bubble-user: #1a1a1a;
+      --bubble-ai:   #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Masthead ── */
+    header {
+      border-bottom: 3px double var(--ink);
+      padding: 1rem 2rem 0.75rem;
+      display: flex;
+      align-items: flex-end;
+      gap: 1.25rem;
+      background: var(--paper);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-block { display: flex; flex-direction: column; line-height: 1; }
+
+    .logo-top {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .logo-sub {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      font-weight: 400;
+    }
+
+    .header-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .header-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+      padding-bottom: 0.2rem;
+    }
+
+    /* ── Chat window ── */
+    #chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem clamp(1rem, 6vw, 4rem);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      scroll-behavior: smooth;
+    }
+
+    /* Greeting card */
+    .greeting {
+      border: 1px solid var(--rule);
+      background: #fff;
+      padding: 1.5rem 2rem;
+      max-width: 600px;
+      align-self: center;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .greeting h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .greeting p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Messages */
+    .msg-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-row.user  { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .avatar-ai   { background: var(--accent); color: #fff; }
+    .avatar-user { background: var(--ink); color: #fff; }
+
+    .bubble {
+      max-width: min(72%, 640px);
+      padding: 0.85rem 1.1rem;
+      line-height: 1.65;
+      font-size: 0.9rem;
+      border: 1px solid transparent;
+    }
+
+    .bubble-ai {
+      background: var(--bubble-ai);
+      border-color: var(--rule);
+      color: var(--ink);
+      border-radius: 0 12px 12px 12px;
+    }
+
+    .bubble-user {
+      background: var(--bubble-user);
+      color: #f5f5f5;
+      border-radius: 12px 0 12px 12px;
+    }
+
+    /* Typing dots */
+    .typing-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: blink 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; }
+      40%           { opacity: 1; }
+    }
+
+    /* ── Input bar ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      background: var(--paper);
+      padding: 1rem clamp(1rem, 6vw, 4rem);
+      position: sticky;
+      bottom: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    #user-input {
+      flex: 1;
+      resize: none;
+      border: 1px solid var(--rule);
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+      max-height: 140px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+
+    #user-input:focus { border-color: var(--accent); }
+
+    #send-btn {
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      padding: 0 1.5rem;
+      height: 46px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #send-btn:hover   { background: var(--accent); }
+    #send-btn:active  { transform: scale(0.97); }
+    #send-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.6rem;
+    }
+
+    /* Scrollbar */
+    #chat-container::-webkit-scrollbar { width: 4px; }
+    #chat-container::-webkit-scrollbar-track { background: transparent; }
+    #chat-container::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+    /* ── Error toast ── */
+    #error-toast {
+      display: none;
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #b91c1c;
+      color: #fff;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.82rem;
+      border-radius: 4px;
+      z-index: 999;
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    /* responsive */
+    @media (max-width: 480px) {
+      .bubble { max-width: 85%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════
+       MASTHEAD
+  ════════════════════════════════ -->
+  <header>
+    <div class="logo-block">
+      <span class="logo-top">NeutralMind</span>
+      <span class="logo-sub">The Unbiased AI · Est. 2025</span>
+    </div>
+    <div class="header-rule"></div>
+    <span class="header-tag">Multiple Perspectives · No Agenda</span>
+  </header>
+
+  <!-- ════════════════════════════════
+       CHAT WINDOW
+  ════════════════════════════════ -->
+  <div id="chat-container">
+    <div class="greeting">
+      <h2>Welcome to NeutralMind</h2>
+      <p>Ask me anything. I'll present balanced viewpoints, cite multiple perspectives, and let <em>you</em> draw your own conclusions.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       INPUT BAR
+  ════════════════════════════════ -->
+  <footer>
+    <div class="input-row">
+      <textarea
+        id="user-input"
+        placeholder="Ask a question…"
+        rows="1"
+        autocomplete="off"
+      ></textarea>
+      <button id="send-btn">Send</button>
+    </div>
+    <p class="footer-note">Powered by Mistral AI via OpenRouter · Responses may be imperfect</p>
+  </footer>
+
+  <!-- Error toast -->
+  <div id="error-toast"></div>
+
+  <!-- ════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════ -->
+  <script>
+    // ╔══════════════════════════════════════════════════════╗
+    // ║  STEP 1 — PASTE YOUR OPENROUTER API KEY BELOW       ║
+    // ║  Get one free at: https://openrouter.ai/keys        ║
+    // ╚══════════════════════════════════════════════════════╝
+    const API_KEY = "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";
+
+    // ── The Unbiased System Prompt ──────────────────────────
+    const SYSTEM_PROMPT = `
+You are NeutralMind, a strictly non-partisan, unbiased AI assistant.
+
+Your core rules — follow them on every response without exception:
+
+1. MULTIPLE PERSPECTIVES: For any topic that has more than one viewpoint (political, social, scientific debate, ethical, historical), you MUST present at least two distinct perspectives fairly and with equal depth. Label them clearly (e.g., "Perspective A:", "Perspective B:").
+
+2. NEUTRAL LANGUAGE: Avoid loaded, charged, or emotionally slanted words. Do not use terms that favour one side. Say "some argue" or "others contend" rather than asserting one view as truth.
+
+3. NO PERSONAL OPINION: Do not state personal opinions, endorse politicians, policies, religions, or ideologies. If directly asked for your opinion, explain that you are designed to remain neutral and redirect to the evidence.
+
+4. FACT vs. OPINION: Clearly distinguish established facts (backed by scientific consensus or verified data) from opinions, claims, or interpretations. Use phrases like "Evidence suggests…" or "According to [source type]…".
+
+5. CITE YOUR REASONING: When making claims, briefly indicate the type of source or reasoning (e.g., "peer-reviewed studies suggest…", "proponents of this policy argue…", "critics point out…").
+
+6. SENSITIVE TOPICS: For politically sensitive topics (abortion, gun control, immigration, etc.) be especially careful to represent all major viewpoints without belittling or favouring any.
+
+7. UNCERTAINTY: If a topic is genuinely uncertain or contested in the scientific/scholarly community, say so explicitly rather than presenting one view as settled.
+
+8. CONCISENESS: Be clear and concise. Use short paragraphs or bullet points to make multiple perspectives easy to compare.
+
+Always end responses on contested topics by reminding the user that they should consult primary sources and form their own conclusions.
+    `.trim();
+
+    // ── State ───────────────────────────────────────────────
+    const conversationHistory = [];
+
+    // ── DOM refs ────────────────────────────────────────────
+    const chatContainer = document.getElementById("chat-container");
+    const userInput     = document.getElementById("user-input");
+    const sendBtn       = document.getElementById("send-btn");
+    const errorToast    = document.getElementById("error-toast");
+
+    // ── Auto-resize textarea ────────────────────────────────
+    userInput.addEventListener("input", () => {
+      userInput.style.height = "auto";
+      userInput.style.height = Math.min(userInput.scrollHeight, 140) + "px";
+    });
+
+    // Send on Enter (Shift+Enter = newline)
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    // ── Helpers ─────────────────────────────────────────────
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function showError(msg) {
+      errorToast.textContent = msg;
+      errorToast.style.display = "block";
+      setTimeout(() => { errorToast.style.display = "none"; }, 5000);
+    }
+
+    function appendMessage(role, text) {
+      const isUser = role === "user";
+      const row = document.createElement("div");
+      row.className = `msg-row ${isUser ? "user" : "ai"}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${isUser ? "avatar-user" : "avatar-ai"}`;
+      avatar.textContent = isUser ? "You" : "NM";
+
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${isUser ? "bubble-user" : "bubble-ai"}`;
+      bubble.innerHTML = formatText(text);
+
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      chatContainer.appendChild(row);
+      scrollToBottom();
+      return bubble;
+    }
+
+    function appendTypingIndicator() {
+      const row = document.createElement("div");
+      row.className = "msg-row ai";
+      row.id = "typing-row";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar avatar-ai";
+      avatar.textContent = "NM";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bubble-ai";
+      bubble.innerHTML = `
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      `;
+
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      chatContainer.appendChild(row);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      const el = document.getElementById("typing-row");
+      if (el) el.remove();
+    }
+
+    // Basic markdown-ish formatting
+    function formatText(raw) {
+      return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, "<code style='background:#f0ede6;padding:1px 5px;border-radius:3px;font-size:0.85em'>$1</code>")
+        .replace(/\n/g, "<br>");
+    }
+
+    // ── Main send function ───────────────────────────────────
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      if (API_KEY === "PASTE_YOUR_OPENROUTER_API_KEY_HERE" || API_KEY === "") {
+        showError("⚠️ No API key found! Open index.html, find 'PASTE_YOUR_OPENROUTER_API_KEY_HERE', and replace it with your real key.");
+        return;
+      }
+
+      // Clear input
+      userInput.value = "";
+      userInput.style.height = "auto";
+      sendBtn.disabled = true;
+
+      // Add user message to UI and history
+      appendMessage("user", text);
+      conversationHistory.push({ role: "user", content: text });
+
+      // Show typing
+      appendTypingIndicator();
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": window.location.href,
+            "X-Title": "NeutralMind Chatbot"
+          },
+          body: JSON.stringify({
+            model: "openrouter/free",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...conversationHistory
+            ],
+            max_tokens: 1024,
+            temperature: 0.5
+          })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err?.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const reply = data?.choices?.[0]?.message?.content || "I didn't receive a response. Please try again.";
+
+        removeTypingIndicator();
+        appendMessage("assistant", reply);
+        conversationHistory.push({ role: "assistant", content: reply });
+
+      } catch (err) {
+        removeTypingIndicator();
+        showError("Error: " + err.message);
+        appendMessage("assistant", "⚠️ Something went wrong. Please check your API key or try again later.");
+      } finally {
+        sendBtn.disabled = false;
+        userInput.focus();
+      }
+    }
+  </script>
+</body>
+</html>
